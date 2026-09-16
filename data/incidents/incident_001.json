@@ -1,0 +1,9 @@
+{
+  "incident_id": "INC-001",
+  "title": "API latency increased",
+  "service": "payment-api",
+  "severity": "high",
+  "description": "API response time increased from 200ms to 5 seconds after a recent deployment.",
+  "timestamp": "2026-09-16T09:00:00",
+  "status": "investigating"
+}

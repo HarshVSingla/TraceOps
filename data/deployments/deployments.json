@@ -1,0 +1,20 @@
+[
+  {
+    "version": "v2.3.9",
+    "service": "payment-api",
+    "timestamp": "2026-09-15T18:00:00",
+    "changes": [
+      "Bug fixes",
+      "Minor performance improvements"
+    ]
+  },
+  {
+    "version": "v2.4.0",
+    "service": "payment-api",
+    "timestamp": "2026-09-16T08:45:00",
+    "changes": [
+      "Changed database connection pool configuration",
+      "Updated database timeout settings"
+    ]
+  }
+]

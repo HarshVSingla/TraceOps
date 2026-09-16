@@ -1,0 +1,7 @@
+2026-09-16 08:50:01 INFO payment-api request completed in 210ms
+2026-09-16 08:55:12 INFO payment-api request completed in 230ms
+2026-09-16 09:00:03 ERROR payment-api database connection timeout
+2026-09-16 09:00:04 ERROR payment-api database connection timeout
+2026-09-16 09:00:05 ERROR payment-api request took 5000ms
+2026-09-16 09:01:10 ERROR payment-api database connection timeout
+2026-09-16 09:02:15 ERROR payment-api request took 5100ms
