@@ -1,49 +1,62 @@
-from pathlib import Path
+import os
+
+from dotenv import load_dotenv
+from azure.core.credentials import AzureKeyCredential
+from azure.search.documents import SearchClient
 
 
 class KnowledgeAgent:
 
-    def __init__(self, knowledge_folder):
-        self.knowledge_folder = Path(knowledge_folder)
+    def __init__(self):
+        load_dotenv()
 
-    def search(self, keyword):
+        endpoint = os.getenv("AZURE_SEARCH_ENDPOINT")
+        api_key = os.getenv("AZURE_SEARCH_ADMIN_KEY_PRIMARY")
+        index_name = os.getenv("AZURE_SEARCH_INDEX")
 
-        if not self.knowledge_folder.exists():
-            return {
-                "status": "error",
-                "message": "Knowledge folder not found"
-            }
+        credential = AzureKeyCredential(api_key)
 
-        results = []
+        self.search_client = SearchClient(
+            endpoint=endpoint,
+            index_name=index_name,
+            credential=credential
+        )
 
-        for file in self.knowledge_folder.glob("*.md"):
+    def search(self, query):
 
-            with open(file, "r", encoding="utf-8") as f:
-                content = f.read()
+        results = self.search_client.search(
+            search_text=query,
+            top=5
+        )
 
-            if keyword.lower() in content.lower():
-                results.append({
-                    "file": file.name,
-                    "content": content
-                })
+        matches = []
+
+        for result in results:
+            matches.append({
+                "file_name": result["file_name"],
+                "content": result["content"]
+            })
 
         return {
             "status": "success",
-            "keyword": keyword,
-            "matches": results
+            "query": query,
+            "matches": matches
         }
 
 
 if __name__ == "__main__":
 
-    knowledge_path = (
-        Path(__file__).resolve().parents[2]
-        / "data"
-        / "knowledge"
-    )
+    agent = KnowledgeAgent()
 
-    agent = KnowledgeAgent(knowledge_path)
+    result = agent.search("database connection timeout")
 
-    result = agent.search("database connection")
+    print("\n===== TRACEOPS AZURE AI SEARCH =====")
 
-    print(result)
+    print("\nQuery:")
+    print(result["query"])
+
+    print("\nMatches:")
+
+    for match in result["matches"]:
+        print("\nFile:", match["file_name"])
+        print(match["content"])
