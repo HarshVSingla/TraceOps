@@ -1,79 +1,67 @@
+import json
+
+from backend.clients.azure_openai_client import ask_gpt
+
+
 class RootCauseAgent:
 
     def analyze(self, log_evidence, deployment_evidence, knowledge_evidence):
 
-        findings = []
-
-        # Check log evidence
-        if log_evidence["error_count"] > 0:
-            findings.append(
-                "Multiple errors were detected in the application logs."
-            )
-
-        # Check deployment evidence
-        deployment_changes = deployment_evidence.get("changes", [])
-
-        pool_change = any(
-            "connection pool" in change.lower()
-            for change in deployment_changes
-        )
-
-        timeout_change = any(
-            "timeout" in change.lower()
-            for change in deployment_changes
-        )
-
-        if pool_change:
-            findings.append(
-                "The latest deployment changed the database connection pool configuration."
-            )
-
-        if timeout_change:
-            findings.append(
-                "The latest deployment changed database timeout settings."
-            )
-
-        # Check previous incidents
-        knowledge_matches = knowledge_evidence.get("matches", [])
-
-        previous_incident_found = any(
-            "previous" in match["file"].lower()
-            for match in knowledge_matches
-        )
-
-        if previous_incident_found:
-            findings.append(
-                "A previous incident contains similar database connection timeout symptoms."
-            )
-
-        # Generate conclusion
-        if pool_change and log_evidence["error_count"] > 0:
-            root_cause = (
-                "The database connection pool configuration introduced "
-                "in the latest deployment is a likely root cause."
-            )
-            confidence = "high"
-        else:
-            root_cause = (
-                "Insufficient evidence to determine a specific root cause."
-            )
-            confidence = "low"
-
-        return {
-            "root_cause": root_cause,
-            "confidence": confidence,
-            "evidence": findings,
-            "recommended_fix": (
-                "Review the database connection pool configuration "
-                "and compare it with the previous stable deployment."
-            ),
-            "human_approval_required": True
+        evidence = {
+            "logs": log_evidence,
+            "deployment": deployment_evidence,
+            "knowledge": knowledge_evidence
         }
+
+        prompt = f"""
+You are the Root Cause Agent in TraceOps, a software incident investigation system.
+
+Analyze the evidence provided below.
+
+Your job is to:
+1. Identify the most likely root cause.
+2. Assign a confidence level: high, medium, or low.
+3. List the specific evidence supporting the conclusion.
+4. Recommend a practical fix.
+5. Do not invent facts that are not present in the evidence.
+6. If the evidence is insufficient, clearly say so.
+
+Return ONLY valid JSON in exactly this structure:
+
+{{
+    "root_cause": "string",
+    "confidence": "high | medium | low",
+    "evidence": [
+        "string",
+        "string"
+    ],
+    "recommended_fix": "string",
+    "human_approval_required": true
+}}
+
+Evidence:
+
+{json.dumps(evidence, indent=2)}
+"""
+
+        response = ask_gpt(prompt)
+
+        try:
+            result = json.loads(response)
+        except json.JSONDecodeError:
+            result = {
+                "root_cause": response,
+                "confidence": "low",
+                "evidence": [],
+                "recommended_fix": "Review the investigation evidence manually.",
+                "human_approval_required": True
+            }
+
+        return result
 
 
 if __name__ == "__main__":
 
-    # Simulated output from Log Agent
     log_evidence = {
         "status": "success",
         "total_logs": 7,
@@ -87,7 +75,6 @@ if __name__ == "__main__":
         ]
     }
 
-    # Simulated output from Deployment Agent
     deployment_evidence = {
         "status": "success",
         "service": "payment-api",
@@ -99,7 +86,6 @@ if __name__ == "__main__":
         ]
     }
 
-    # Simulated output from Knowledge Agent
     knowledge_evidence = {
         "status": "success",
         "keyword": "database connection",
@@ -123,7 +109,7 @@ if __name__ == "__main__":
         knowledge_evidence
     )
 
-    print("\n===== TRACEOPS ROOT CAUSE ANALYSIS =====")
+    print("\n===== TRACEOPS AI ROOT CAUSE ANALYSIS =====")
 
     print("\nRoot Cause:")
     print(result["root_cause"])
@@ -132,7 +118,6 @@ if __name__ == "__main__":
     print(result["confidence"])
 
     print("\nEvidence:")
-
     for evidence in result["evidence"]:
         print("-", evidence)
 
