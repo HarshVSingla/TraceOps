@@ -25,7 +25,7 @@ class TraceOpsOrchestrator:
 
         self.root_cause_agent = RootCauseAgent()
 
-    def investigate(self, service):
+    def investigate(self, service, incident_description):
 
         print("\n===== TRACEOPS INVESTIGATION STARTED =====")
 
@@ -39,7 +39,10 @@ class TraceOpsOrchestrator:
 
         # 3. Search knowledge
         print("[3/4] Running Knowledge Agent...")
-        knowledge_evidence = self.knowledge_agent.search("database connection")
+        knowledge_query = incident_description
+
+        knowledge_evidence = self.knowledge_agent.search(knowledge_query)
+
             
 
         # 4. Determine root cause
@@ -63,26 +66,30 @@ if __name__ == "__main__":
 
     orchestrator = TraceOpsOrchestrator()
 
-    result = orchestrator.investigate("payment-api")
+    result = orchestrator.investigate(
+    "payment-api",
+    "API response time increased from 200ms to 5 seconds after a recent deployment."
+)
 
     print("\n===== FINAL INVESTIGATION =====")
 
-    print("\nRoot Cause:")
-    print(result["root_cause_analysis"]["root_cause"])
+analysis = result["root_cause_analysis"]
 
-    print("\nConfidence:")
-    print(result["root_cause_analysis"]["confidence"])
+print("\nIncident Summary:")
+print(analysis["incident_summary"])
 
-    print("\nEvidence:")
+print("\nRoot Cause:")
+print(analysis["root_cause"])
 
-    for evidence in result["root_cause_analysis"]["evidence"]:
-        print("-", evidence)
+print("\nConfidence:")
+print(analysis["confidence"])
 
-    print("\nRecommended Fix:")
-    print(result["root_cause_analysis"]["recommended_fix"])
+print("\nEvidence:")
+for evidence in analysis["evidence"]:
+    print("-", evidence)
 
-    print("\nHuman Approval Required:")
-    print(
-        result["root_cause_analysis"]
-        ["human_approval_required"]
-    )
+print("\nRecommended Fix:")
+print(analysis["recommended_fix"])
+
+print("\nHuman Approval Required:")
+print(analysis["human_approval_required"])

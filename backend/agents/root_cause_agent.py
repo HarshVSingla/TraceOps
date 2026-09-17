@@ -42,6 +42,7 @@ Do not include ```json fences.
 Use exactly this structure:
 
 {{
+    "incident_summary": "string",
     "root_cause": "string",
     "confidence": "high | medium | low",
     "evidence": [
@@ -62,12 +63,13 @@ Evidence:
             result = json.loads(response)
         except json.JSONDecodeError:
             result = {
-                "root_cause": response,
-                "confidence": "low",
-                "evidence": [],
-                "recommended_fix": "Review the investigation evidence manually.",
-                "human_approval_required": True
-            }
+    "incident_summary": "Unable to generate a structured incident analysis.",
+    "root_cause": response,
+    "confidence": "low",
+    "evidence": [],
+    "recommended_fix": "Review the investigation evidence manually.",
+    "human_approval_required": True
+}
 
         return result
 
@@ -122,6 +124,9 @@ if __name__ == "__main__":
     )
 
     print("\n===== TRACEOPS AI ROOT CAUSE ANALYSIS =====")
+
+    print("\nIncident Summary:")
+    print(result["incident_summary"])
 
     print("\nRoot Cause:")
     print(result["root_cause"])
