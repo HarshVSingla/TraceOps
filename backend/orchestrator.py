@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from agents.log_agent import LogAgent
-from agents.deployment_agent import DeploymentAgent
-from agents.knowledge_agent import KnowledgeAgent
-from agents.root_cause_agent import RootCauseAgent
+from backend.agents.log_agent import LogAgent
+from backend.agents.deployment_agent import DeploymentAgent
+from backend.agents.knowledge_agent import KnowledgeAgent
+from backend.agents.root_cause_agent import RootCauseAgent
 
 
 class TraceOpsOrchestrator:
