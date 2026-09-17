@@ -16,23 +16,35 @@ class RootCauseAgent:
         prompt = f"""
 You are the Root Cause Agent in TraceOps, a software incident investigation system.
 
-Analyze the evidence provided below.
+Analyze ONLY the evidence provided below.
 
-Your job is to:
-1. Identify the most likely root cause.
-2. Assign a confidence level: high, medium, or low.
-3. List the specific evidence supporting the conclusion.
-4. Recommend a practical fix.
-5. Do not invent facts that are not present in the evidence.
-6. If the evidence is insufficient, clearly say so.
+STRICT RULES:
+1. Use only facts explicitly present in the evidence.
+2. Do not invent, assume, or infer specific technical details that are not provided.
+3. Do not introduce facts from your general knowledge.
+4. Every item in the "evidence" array must be directly supported by the supplied evidence.
+5. The root cause must be stated as a conclusion based on the supplied evidence.
+6. If multiple causes are possible, say so instead of pretending certainty.
+7. If the evidence is insufficient, set confidence to "low" and clearly explain why.
+8. The recommended fix must use only actions supported by the supplied evidence.
+9. Do not add specific configuration values, parameter names, infrastructure details, or operational steps unless they appear in the evidence.
+10. human_approval_required must always be true.
 
-Return ONLY valid JSON in exactly this structure:
+Confidence rules:
+- high: Multiple pieces of evidence directly support the same root cause.
+- medium: Evidence suggests a likely cause but does not strongly establish it.
+- low: Evidence is insufficient or conflicting.
+
+Return ONLY valid JSON.
+Do not use Markdown.
+Do not include ```json fences.
+
+Use exactly this structure:
 
 {{
     "root_cause": "string",
     "confidence": "high | medium | low",
     "evidence": [
-        "string",
         "string"
     ],
     "recommended_fix": "string",
