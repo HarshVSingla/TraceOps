@@ -20,9 +20,8 @@ class TraceOpsOrchestrator:
             base_path / "data" / "deployments" / "deployments.json"
         )
 
-        self.knowledge_agent = KnowledgeAgent(
-            base_path / "data" / "knowledge"
-        )
+
+        self.knowledge_agent = KnowledgeAgent()
 
         self.root_cause_agent = RootCauseAgent()
 
