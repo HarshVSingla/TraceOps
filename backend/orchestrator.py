@@ -73,23 +73,23 @@ if __name__ == "__main__":
 
     print("\n===== FINAL INVESTIGATION =====")
 
-analysis = result["root_cause_analysis"]
+    analysis = result["root_cause_analysis"]
 
-print("\nIncident Summary:")
-print(analysis["incident_summary"])
+    print("\nIncident Summary:")
+    print(analysis["incident_summary"])
 
-print("\nRoot Cause:")
-print(analysis["root_cause"])
+    print("\nRoot Cause:")
+    print(analysis["root_cause"])
 
-print("\nConfidence:")
-print(analysis["confidence"])
+    print("\nConfidence:")
+    print(analysis["confidence"])
 
-print("\nEvidence:")
-for evidence in analysis["evidence"]:
-    print("-", evidence)
+    print("\nEvidence:")
+    for evidence in analysis["evidence"]:
+        print("-", evidence)
 
-print("\nRecommended Fix:")
-print(analysis["recommended_fix"])
+    print("\nRecommended Fix:")
+    print(analysis["recommended_fix"])
 
-print("\nHuman Approval Required:")
-print(analysis["human_approval_required"])
+    print("\nHuman Approval Required:")
+    print(analysis["human_approval_required"])

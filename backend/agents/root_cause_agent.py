@@ -29,11 +29,30 @@ STRICT RULES:
 8. The recommended fix must use only actions supported by the supplied evidence.
 9. Do not add specific configuration values, parameter names, infrastructure details, or operational steps unless they appear in the evidence.
 10. human_approval_required must always be true.
+11. verification_steps must contain practical checks supported by the supplied evidence.
+12. Do not recommend destructive or irreversible actions as completed actions.
+13. Verification steps must be completed and reviewed by a human before applying fixes.
 
 Confidence rules:
-- high: Multiple pieces of evidence directly support the same root cause.
-- medium: Evidence suggests a likely cause but does not strongly establish it.
-- low: Evidence is insufficient or conflicting.
+- high: The root cause is directly established by multiple independent
+  pieces of evidence, such as confirmed configuration failures, explicit
+  error messages identifying the cause, or verified remediation results.
+- medium: Multiple pieces of evidence support a likely cause, but the
+  underlying cause has not been directly verified.
+- low: Evidence is insufficient, conflicting, or supports only symptoms
+  without establishing a likely cause.
+
+The verification_steps field must explain how a human can validate the suspected cause using only the supplied evidence and documented troubleshooting guidance.
+Causation rules:
+- Do not claim that a deployment caused an incident solely because the
+  incident occurred after the deployment.
+- When a deployment change matches the incident symptoms, describe it as
+  a likely contributing cause unless the evidence directly confirms
+  causation.
+- Clearly distinguish observed facts, likely causes, and unverified
+  hypotheses.
+- If the evidence establishes symptoms but not the underlying cause,
+  state that limitation explicitly.
 
 Return ONLY valid JSON.
 Do not use Markdown.
@@ -49,6 +68,9 @@ Use exactly this structure:
         "string"
     ],
     "recommended_fix": "string",
+    "verification_steps": [
+        "string"
+    ],
     "human_approval_required": true
 }}
 

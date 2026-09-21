@@ -17,10 +17,27 @@ class DeploymentAgent:
         with open(self.deployment_file, "r") as file:
             deployments = json.load(file)
 
+        # Normalize service names for flexible matching
+        normalized_service = service.lower().strip()
+
+        service_aliases = {
+            "payment service": "payment-api",
+            "payment-service": "payment-api",
+            "payment api": "payment-api",
+            "payment_api": "payment-api",
+        }
+
+        normalized_service = service_aliases.get(
+            normalized_service,
+            normalized_service
+        )
+
         service_deployments = []
 
         for deployment in deployments:
-            if deployment["service"] == service:
+            deployment_service = deployment["service"].lower().strip()
+
+            if deployment_service == normalized_service:
                 service_deployments.append(deployment)
 
         # Sort newest deployment first
@@ -58,6 +75,6 @@ if __name__ == "__main__":
 
     agent = DeploymentAgent(deployment_path)
 
-    result = agent.analyze("payment-api")
+    result = agent.analyze("payment service")
 
     print(result)
