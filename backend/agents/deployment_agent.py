@@ -12,25 +12,21 @@ class DeploymentAgent:
                 "message": "Deployment data not provided"
             }
 
-        if self.deployment_data.get("service_version") is None:
+        if self.deployment_data.get("timestamp_utc") is None:
             return {
                 "status": "error",
-                "message": "Deployment version not provided"
+                "message": "Deployment timestamp not provided"
             }
 
         return {
             "status": "success",
             "service": service,
             "deployment_id": self.deployment_data.get("deployment_id"),
-            "latest_version": self.deployment_data.get("service_version"),
-            "deployment_time": self.deployment_data.get(
-                "deployment_timestamp_utc"
-            ),
+            "deployment_time": self.deployment_data.get("timestamp_utc"),
             "deployed_by": self.deployment_data.get("deployed_by"),
             "changes": self.deployment_data.get("change_summary"),
-            "deployment_status": self.deployment_data.get(
-                "deployment_status"
-            )
+            "commit_id": self.deployment_data.get("commit_simulated_id"),
+            "deployment_status": self.deployment_data.get("status")
         }
 
 

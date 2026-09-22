@@ -137,6 +137,49 @@ def get_foundry_agent_client():
 # PROMPT BUILDER
 # ---------------------------------------------------------
 
+SCHEMA_CONTRACT = """
+INVESTIGATION_EVIDENCE MUST use EXACTLY this schema. Do not rename any
+field, do not omit any field (use null, {}, or [] if a value is not
+applicable), and do not introduce alternative field names.
+
+{
+  "simulated": true,
+  "service": {
+    "name": "string",
+    "version": "string",
+    "language": "string",
+    "runtime": "simulated"
+  },
+  "incident_category": "string",
+  "deployment_event": {
+    "deployment_id": "string",
+    "timestamp_utc": "string",
+    "change_summary": "string",
+    "commit_simulated_id": "string",
+    "deployed_by": "string",
+    "status": "string"
+  },
+  "runtime_logs": {
+    "simulated": true,
+    "logs": [
+      {"timestamp_utc": "string", "level": "ERROR|WARN|INFO", "message": "string"}
+    ]
+  },
+  "code_diff": {},
+  "execution": {},
+  "observed_metrics": {},
+  "tests_and_validation": {}
+}
+
+Field name rules (violating any of these is a failure):
+- Use "runtime_logs.logs" — never "runtime_logs.entries".
+- Use "deployment_event" — never "deployment_metadata".
+- Use "service" as an object — never a flat "service_name" string.
+- Use "deployment_event.timestamp_utc" and "deployment_event.status" —
+  never "deployment_timestamp_utc", "deployment_status", or "service_version".
+"""
+
+
 def build_simulation_prompt(
     request: SimulationRequest
 ) -> str:
@@ -181,6 +224,8 @@ Mandatory requirements:
     investigation evidence.
 12. Do not expose secrets, credentials, or tokens.
 
+{SCHEMA_CONTRACT}
+
 Return the simulation result now.
 """
 
@@ -224,6 +269,32 @@ def parse_simulation_result(agent_output: str) -> dict:
             raise ValueError(
                 f"Simulation result is missing: {section}"
             )
+
+    evidence = result["INVESTIGATION_EVIDENCE"]
+
+    if not isinstance(evidence.get("service"), dict):
+        raise ValueError(
+            "INVESTIGATION_EVIDENCE.service must be an object"
+        )
+
+    if not isinstance(evidence.get("deployment_event"), dict):
+        raise ValueError(
+            "INVESTIGATION_EVIDENCE.deployment_event must be an object"
+        )
+
+    runtime_logs = evidence.get("runtime_logs")
+
+    if not isinstance(runtime_logs, dict) or not isinstance(
+        runtime_logs.get("logs"), list
+    ):
+        raise ValueError(
+            "INVESTIGATION_EVIDENCE.runtime_logs.logs must be a list"
+        )
+
+    if not isinstance(evidence.get("incident_category"), str):
+        raise ValueError(
+            "INVESTIGATION_EVIDENCE.incident_category must be a string"
+        )
 
     return result
 
