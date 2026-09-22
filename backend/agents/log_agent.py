@@ -1,30 +1,28 @@
-from pathlib import Path
 
 
 class LogAgent:
 
-    def __init__(self, log_file):
-        self.log_file = Path(log_file)
+    def __init__(self, runtime_logs):
+        self.runtime_logs = runtime_logs
 
     def analyze(self):
-        if not self.log_file.exists():
+
+        if not self.runtime_logs:
             return {
                 "status": "error",
-                "message": "Log file not found"
+                "message": "No runtime logs provided"
             }
-
-        with open(self.log_file, "r") as file:
-            logs = file.readlines()
 
         errors = []
 
-        for log in logs:
-            if "ERROR" in log:
-                errors.append(log.strip())
+        for log in self.runtime_logs:
+
+            if log.get("level") == "ERROR":
+                errors.append(log)
 
         return {
             "status": "success",
-            "total_logs": len(logs),
+            "total_logs": len(self.runtime_logs),
             "error_count": len(errors),
             "errors": errors
         }

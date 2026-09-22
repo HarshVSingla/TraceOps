@@ -1,66 +1,36 @@
-from pathlib import Path
-import json
-
 
 class DeploymentAgent:
 
-    def __init__(self, deployment_file):
-        self.deployment_file = Path(deployment_file)
+    def __init__(self, deployment_data):
+        self.deployment_data = deployment_data
 
     def analyze(self, service):
-        if not self.deployment_file.exists():
+
+        if not self.deployment_data:
             return {
                 "status": "error",
-                "message": "Deployment file not found"
+                "message": "Deployment data not provided"
             }
 
-        with open(self.deployment_file, "r") as file:
-            deployments = json.load(file)
-
-        # Normalize service names for flexible matching
-        normalized_service = service.lower().strip()
-
-        service_aliases = {
-            "payment service": "payment-api",
-            "payment-service": "payment-api",
-            "payment api": "payment-api",
-            "payment_api": "payment-api",
-        }
-
-        normalized_service = service_aliases.get(
-            normalized_service,
-            normalized_service
-        )
-
-        service_deployments = []
-
-        for deployment in deployments:
-            deployment_service = deployment["service"].lower().strip()
-
-            if deployment_service == normalized_service:
-                service_deployments.append(deployment)
-
-        # Sort newest deployment first
-        service_deployments.sort(
-            key=lambda x: x["timestamp"],
-            reverse=True
-        )
-
-        if not service_deployments:
+        if self.deployment_data.get("service_version") is None:
             return {
-                "status": "success",
-                "service": service,
-                "message": "No deployments found"
+                "status": "error",
+                "message": "Deployment version not provided"
             }
-
-        latest = service_deployments[0]
 
         return {
             "status": "success",
             "service": service,
-            "latest_version": latest["version"],
-            "deployment_time": latest["timestamp"],
-            "changes": latest["changes"]
+            "deployment_id": self.deployment_data.get("deployment_id"),
+            "latest_version": self.deployment_data.get("service_version"),
+            "deployment_time": self.deployment_data.get(
+                "deployment_timestamp_utc"
+            ),
+            "deployed_by": self.deployment_data.get("deployed_by"),
+            "changes": self.deployment_data.get("change_summary"),
+            "deployment_status": self.deployment_data.get(
+                "deployment_status"
+            )
         }
 
 

@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from backend.orchestrator import TraceOpsOrchestrator
 from fastapi.middleware.cors import CORSMiddleware
+from backend.api.simulation_routes import router as simulation_router
 
 
 app = FastAPI(
@@ -57,3 +58,5 @@ def investigate_incident(request: InvestigationRequest):
     )
 
     return result
+
+app.include_router(simulation_router)

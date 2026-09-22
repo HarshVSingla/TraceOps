@@ -1,4 +1,3 @@
-from pathlib import Path
 
 from backend.agents.log_agent import LogAgent
 from backend.agents.deployment_agent import DeploymentAgent
@@ -8,88 +7,114 @@ from backend.agents.root_cause_agent import RootCauseAgent
 
 class TraceOpsOrchestrator:
 
-    def __init__(self):
-
-        base_path = Path(__file__).resolve().parents[1]
-
-        self.log_agent = LogAgent(
-            base_path / "data" / "logs" / "api.log"
-        )
-
-        self.deployment_agent = DeploymentAgent(
-            base_path / "data" / "deployments" / "deployments.json"
-        )
-
-
-        self.knowledge_agent = KnowledgeAgent()
-
-        self.root_cause_agent = RootCauseAgent()
-
-    def investigate(self, service, incident_description):
+    def investigate(self, investigation_evidence):
 
         print("\n===== TRACEOPS INVESTIGATION STARTED =====")
 
-        # 1. Analyze logs
+        # Get generated evidence from Simulation Agent
+        runtime_logs_data = investigation_evidence.get(
+        "runtime_logs",
+        []
+        )
+
+        if isinstance(runtime_logs_data, list):
+            runtime_logs = runtime_logs_data
+        else:
+            runtime_logs = runtime_logs_data.get(
+        "logs",
+        []
+    )
+
+        deployment_data = investigation_evidence.get(
+            "deployment_event",
+            {}
+        )
+
+        service_data = investigation_evidence.get(
+    "service",
+    {}
+    )
+
+        print("ORCHESTRATOR DEBUG service_data:", service_data)
+
+        service = service_data.get(
+    "name",
+    "unknown"
+    )
+
+        # 1. Analyze generated runtime logs
         print("\n[1/4] Running Log Agent...")
-        log_evidence = self.log_agent.analyze()
 
-        # 2. Analyze deployments
+        log_agent = LogAgent(runtime_logs)
+        log_evidence = log_agent.analyze()
+
+        # 2. Analyze generated deployment metadata
         print("[2/4] Running Deployment Agent...")
-        deployment_evidence = self.deployment_agent.analyze(service)
 
-        # 3. Search knowledge
+        deployment_agent = DeploymentAgent(deployment_data)
+        deployment_evidence = deployment_agent.analyze(service)
+
+        # 3. Search knowledge base
         print("[3/4] Running Knowledge Agent...")
-        knowledge_query = incident_description
 
-        knowledge_evidence = self.knowledge_agent.search(knowledge_query)
+        knowledge_query = (
+            f"{service} "
+            f"{investigation_evidence.get('incident_category', '')}"
+        )
 
-            
+        knowledge_agent = KnowledgeAgent()
+        knowledge_evidence = knowledge_agent.search(
+            knowledge_query
+        )
 
         # 4. Determine root cause
         print("[4/4] Running Root Cause Agent...")
-        root_cause = self.root_cause_agent.analyze(
+
+        root_cause_agent = RootCauseAgent()
+
+        root_cause = root_cause_agent.analyze(
             log_evidence,
             deployment_evidence,
             knowledge_evidence
         )
 
         return {
-            "incident_service": service,
-            "log_evidence": log_evidence,
-            "deployment_evidence": deployment_evidence,
-            "knowledge_evidence": knowledge_evidence,
-            "root_cause_analysis": root_cause
-        }
+    "incident_service": service,
+    "log_evidence": log_evidence,
+    "deployment_evidence": deployment_evidence,
+    "knowledge_evidence": knowledge_evidence,
+    "root_cause_analysis": root_cause
+}
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    orchestrator = TraceOpsOrchestrator()
+#     orchestrator = TraceOpsOrchestrator()
 
-    result = orchestrator.investigate(
-    "payment-api",
-    "API response time increased from 200ms to 5 seconds after a recent deployment."
-)
+#     result = orchestrator.investigate(
+#     "payment-api",
+#     "API response time increased from 200ms to 5 seconds after a recent deployment."
+# )
 
-    print("\n===== FINAL INVESTIGATION =====")
+#     print("\n===== FINAL INVESTIGATION =====")
 
-    analysis = result["root_cause_analysis"]
+#     analysis = result["root_cause_analysis"]
 
-    print("\nIncident Summary:")
-    print(analysis["incident_summary"])
+#     print("\nIncident Summary:")
+#     print(analysis["incident_summary"])
 
-    print("\nRoot Cause:")
-    print(analysis["root_cause"])
+#     print("\nRoot Cause:")
+#     print(analysis["root_cause"])
 
-    print("\nConfidence:")
-    print(analysis["confidence"])
+#     print("\nConfidence:")
+#     print(analysis["confidence"])
 
-    print("\nEvidence:")
-    for evidence in analysis["evidence"]:
-        print("-", evidence)
+#     print("\nEvidence:")
+#     for evidence in analysis["evidence"]:
+#         print("-", evidence)
 
-    print("\nRecommended Fix:")
-    print(analysis["recommended_fix"])
+#     print("\nRecommended Fix:")
+#     print(analysis["recommended_fix"])
 
-    print("\nHuman Approval Required:")
-    print(analysis["human_approval_required"])
+#     print("\nHuman Approval Required:")
+#     print(analysis["human_approval_required"])
