@@ -61,8 +61,8 @@ class SimulationRequest(BaseModel):
 
     # Project-level limits
     max_code_tokens: int = Field(
-        default=2000,
-        le=2000
+        default=4000,
+        le=4000
     )
 
     max_fix_attempts: int = Field(
@@ -163,7 +163,7 @@ def build_simulation_prompt(
         "include_code_diff": request.include_code_diff,
         "include_deployment_data": request.include_deployment_data,
         "include_runtime_logs": request.include_runtime_logs,
-        "max_code_tokens": 2000,
+        "max_code_tokens": 4000,
         "max_fix_attempts": 3,
         "expose_ground_truth": False
     }
@@ -309,10 +309,10 @@ def generate_simulation(
 ):
 
     # Enforce fixed project limits on the server side.
-    if request.max_code_tokens > 2000:
+    if request.max_code_tokens > 4000:
         raise HTTPException(
             status_code=400,
-            detail="Maximum code token limit is 2000."
+            detail="Maximum code token limit is 4000."
         )
 
     if request.max_fix_attempts > 3:

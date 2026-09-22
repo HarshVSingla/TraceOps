@@ -41,7 +41,7 @@ export const simulationApi = {
           include_code_diff: true,
           include_deployment_data: true,
           include_runtime_logs: true,
-          max_code_tokens: 2000,
+          max_code_tokens: 4000,
           max_fix_attempts: 3,
           expose_ground_truth: false,
         }),
