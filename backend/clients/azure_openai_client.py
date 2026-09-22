@@ -13,9 +13,8 @@ client = OpenAI(
 )
 
 def ask_gpt(prompt):
-    response = client.responses.create(
-        model=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
-        input=prompt
+    response = client.chat.completions.create(
+        model=os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5-mini"),
+        messages=[{"role": "user", "content": prompt}]
     )
-
-    return response.output_text
+    return response.choices[0].message.content
