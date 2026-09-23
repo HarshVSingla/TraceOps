@@ -26,7 +26,6 @@ The platform combines specialized AI agents, Azure AI services, and a controlled
 - [Investigation Workflow](#-investigation-workflow)
 - [Human-in-the-Loop](#-human-in-the-loop)
 - [Future Improvements](#-future-improvements)
-- [Contributors](#-contributors)
 - [License](#-license)
 
 ---
@@ -851,18 +850,6 @@ The primary objectives of TraceOps are:
 
 ---
 
-## 👥 Contributors
-
-This project is developed as part of an academic and technical project.
-
-| Contributor | Responsibility |
-|---|---|
-| Harsh Vardhan Singla | Project development, AI integration, and investigation workflow |
-| Team Members | Development, testing, frontend, backend, and documentation |
-
-Update the contributor information according to the final project team.
-
----
 
 ## 📄 License
 
