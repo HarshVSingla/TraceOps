@@ -20,6 +20,7 @@ import { Button } from "../components/common/Button";
 import { Tabs } from "../components/common/Tabs";
 import { incidentsApi } from "../api/incidentsApi";
 import { investigationApi } from "../api/investigationApi";
+import { verificationApi } from "../api/verificationApi";
 
 export function IncidentDetailPage() {
   const { id } = useParams();
@@ -39,6 +40,11 @@ export function IncidentDetailPage() {
   const [isRemediated, setIsRemediated] = useState(false);
   const [remediationLogs, setRemediationLogs] = useState([]);
   const [isRemediating, setIsRemediating] = useState(false);
+
+  // Verification (ground-truth check — training mode only)
+  const [verification, setVerification] = useState(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationError, setVerificationError] = useState(null);
 
   // These labels communicate the real investigation pipeline steps without fabricating timestamps
   const investigationProgressSteps = [
@@ -138,6 +144,26 @@ export function IncidentDetailPage() {
       setIsRemediated(true);
       incidentsApi.updateIncidentStatus(id, "mitigated");
     }, 2200);
+  };
+
+  // Verify the last diagnosis against hidden ground truth (simulation only)
+  const handleVerifyDiagnosis = async () => {
+    if (!incident) return;
+    setIsVerifying(true);
+    setVerificationError(null);
+
+    try {
+      const simulationId = incident.simulationId || incident.id;
+      const result = await verificationApi.verifySimulation(simulationId);
+      setVerification(result);
+    } catch (err) {
+      console.error("Verification failed:", err);
+      setVerificationError(
+        err?.message || "Verification could not be completed."
+      );
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   // ── Loading / Error states ──────────────────────────────────────────────────
@@ -613,6 +639,77 @@ export function IncidentDetailPage() {
                 <p className="text-slate-500 text-[11px]">No evidence limitations identified.</p>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── SECTION 4.5: Verify Diagnosis Against Ground Truth (Training Mode) ── */}
+      {rootCause && incident?.isSimulated && (
+        <div className="rounded-xl border border-[#1E293B] bg-[#0F1522] p-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1E293B] pb-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+              <h2 className="text-xs font-mono font-semibold uppercase text-slate-300">
+                Verify Diagnosis
+              </h2>
+              <Badge variant="cyan" size="sm">TRAINING MODE ONLY</Badge>
+            </div>
+            {verification && (
+              <span className="text-xs font-mono text-slate-400">
+                Attempt {verification.attempt_number} of 3
+              </span>
+            )}
+          </div>
+
+          <p className="text-xs text-slate-400 leading-relaxed">
+            This checks the AI's diagnosis against the hidden ground truth used to generate this
+            simulation. Real production incidents have no ground truth to check against — this
+            step exists only to measure the pipeline's diagnostic accuracy in this training
+            environment.
+          </p>
+
+          {verificationError && (
+            <div className="p-3 rounded-lg bg-rose-950/20 border border-rose-500/30 text-rose-300 text-xs font-sans">
+              {verificationError}
+            </div>
+          )}
+
+          {verification && (
+            <div
+              className={`p-3.5 rounded-lg border text-xs font-sans space-y-1 ${
+                verification.match === "correct"
+                  ? "bg-emerald-950/20 border-emerald-500/30 text-emerald-300"
+                  : verification.match === "partial"
+                  ? "bg-amber-950/20 border-amber-500/30 text-amber-300"
+                  : "bg-rose-950/20 border-rose-500/30 text-rose-300"
+              }`}
+            >
+              <span className="font-mono font-bold uppercase block">
+                {verification.match}
+              </span>
+              <span className="block text-slate-300 leading-relaxed">
+                {verification.reasoning}
+              </span>
+            </div>
+          )}
+
+          <div className="pt-1 flex items-center justify-between">
+            <span className="text-[11px] font-mono text-slate-500">
+              {verification
+                ? `${verification.attempts_remaining} attempt${verification.attempts_remaining === 1 ? "" : "s"} remaining`
+                : "Not yet verified"}
+            </span>
+
+            <Button
+              variant="outline"
+              size="sm"
+              icon={CheckCircle2}
+              isLoading={isVerifying}
+              disabled={verification?.match === "correct" || verification?.attempts_remaining === 0}
+              onClick={handleVerifyDiagnosis}
+            >
+              {verification ? "Verify Again" : "Verify Diagnosis"}
+            </Button>
           </div>
         </div>
       )}

@@ -10,6 +10,8 @@ from backend.orchestrator import TraceOpsOrchestrator
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from backend.agents.verification_agent import VerificationAgent
+
 
 load_dotenv()
 
@@ -364,6 +366,8 @@ def generate_simulation(
 
         investigation_evidence = simulation["INVESTIGATION_EVIDENCE"]
 
+        
+
         print(
     "DEBUG service:",
     investigation_evidence.get("service")
@@ -453,6 +457,8 @@ def investigate_simulation(
             investigation_evidence
         )
 
+        simulation["last_investigation"] = investigation_result
+
         return {
             "status": "completed",
             "simulation_id": request.simulation_id,
@@ -473,3 +479,76 @@ def investigate_simulation(
                 "Check the backend terminal for details."
             )
         )
+
+# ---------------------------------------------------------
+# VERIFY DIAGNOSIS AGAINST GROUND TRUTH
+# ---------------------------------------------------------
+
+@router.post("/verify")
+def verify_simulation(
+    request: InvestigationRequest
+):
+
+    simulation = simulation_store.get(
+        request.simulation_id
+    )
+
+    if not simulation:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulation not found."
+        )
+
+    last_investigation = simulation.get("last_investigation")
+
+    if not last_investigation:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "No investigation found for this simulation. "
+                "Run /simulation/investigate first."
+            )
+        )
+
+    attempts = simulation["attempts"]
+
+    if len(attempts) >= 3:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum of 3 verification attempts already used."
+        )
+
+    ground_truth = simulation["private_state"].get(
+        "ground_truth_root_cause", ""
+    )
+
+    diagnosed_root_cause = last_investigation.get(
+        "root_cause_analysis", {}
+    ).get("root_cause", "")
+
+    verifier = VerificationAgent()
+
+    verdict = verifier.verify(ground_truth, diagnosed_root_cause)
+
+    attempt_number = len(attempts) + 1
+
+    attempts.append({
+        "attempt_number": attempt_number,
+        "diagnosed_root_cause": diagnosed_root_cause,
+        "match": verdict.get("match"),
+        "reasoning": verdict.get("reasoning")
+    })
+
+    if verdict.get("match") == "correct":
+        simulation["status"] = "resolved"
+    elif attempt_number >= 3:
+        simulation["status"] = "failed"
+
+    return {
+        "status": "completed",
+        "simulation_id": request.simulation_id,
+        "attempt_number": attempt_number,
+        "attempts_remaining": max(0, 3 - attempt_number),
+        "match": verdict.get("match"),
+        "reasoning": verdict.get("reasoning")
+    }
