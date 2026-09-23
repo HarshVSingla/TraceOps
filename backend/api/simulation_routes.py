@@ -181,7 +181,7 @@ Follow all your configured Simulation Agent instructions.
 Mandatory requirements:
 
 1. Generate only one incident.
-2. Keep generated application code at or below 2,000 tokens.
+2. Keep generated application code at or below 4,000 tokens.
 3. Use general observable error messages.
 4. Do not reveal the hidden ground-truth root cause
    in the investigation evidence.
