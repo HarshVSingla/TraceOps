@@ -5,7 +5,7 @@ from backend.clients.azure_openai_client import ask_gpt
 
 class RootCauseAgent:
 
-    def analyze(self, log_evidence, deployment_evidence, knowledge_evidence):
+    def analyze(self, log_evidence, deployment_evidence, knowledge_evidence, prior_feedback=None):
 
         evidence = {
             "logs": log_evidence,
@@ -13,10 +13,32 @@ class RootCauseAgent:
             "knowledge": knowledge_evidence
         }
 
+        feedback_section = ""
+
+        if prior_feedback:
+            feedback_section = f"""
+A PREVIOUS ATTEMPT at diagnosing this incident was judged incorrect or
+incomplete. Use this feedback to reconsider your analysis, but still
+follow all STRICT RULES below — do not invent facts not present in the
+evidence just to satisfy the feedback.
+
+Previous attempt's stated root cause:
+{prior_feedback.get("previous_root_cause", "")}
+
+Why it was judged incorrect/incomplete:
+{prior_feedback.get("reasoning", "")}
+
+Re-examine the evidence below with this in mind. If the evidence genuinely
+supports a different or more specific cause, state it. If the evidence is
+simply insufficient to go further, say so and keep confidence "low" rather
+than guessing.
+"""
+
         prompt = f"""
 You are the Root Cause Agent in TraceOps, a software incident investigation system.
 
 Analyze ONLY the evidence provided below.
+{feedback_section}
 
 STRICT RULES:
 1. Use only facts explicitly present in the evidence.
@@ -85,13 +107,13 @@ Evidence:
             result = json.loads(response)
         except json.JSONDecodeError:
             result = {
-    "incident_summary": "Unable to generate a structured incident analysis.",
-    "root_cause": response,
-    "confidence": "low",
-    "evidence": [],
-    "recommended_fix": "Review the investigation evidence manually.",
-    "human_approval_required": True
-}
+                "incident_summary": "Unable to generate a structured incident analysis.",
+                "root_cause": response,
+                "confidence": "low",
+                "evidence": [],
+                "recommended_fix": "Review the investigation evidence manually.",
+                "human_approval_required": True
+            }
 
         return result
 

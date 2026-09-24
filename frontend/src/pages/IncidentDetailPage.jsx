@@ -147,6 +147,7 @@ export function IncidentDetailPage() {
   };
 
   // Verify the last diagnosis against hidden ground truth (simulation only)
+    // Verify the last diagnosis against hidden ground truth (simulation only)
   const handleVerifyDiagnosis = async () => {
     if (!incident) return;
     setIsVerifying(true);
@@ -160,6 +161,50 @@ export function IncidentDetailPage() {
       console.error("Verification failed:", err);
       setVerificationError(
         err?.message || "Verification could not be completed."
+      );
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Re-run investigation informed by prior verification feedback, then verify again
+  const handleReinvestigateAndVerify = async () => {
+    if (!incident) return;
+    setIsVerifying(true);
+    setVerificationError(null);
+
+    try {
+      const simulationId = incident.simulationId || incident.id;
+
+      const newInvestigation = await verificationApi.reinvestigateSimulation(simulationId);
+      setInvestigation((prev) => ({
+        ...prev,
+        rootCauseAnalysis: {
+          incidentSummary: newInvestigation.root_cause_analysis?.incident_summary || "",
+          rootCause: newInvestigation.root_cause_analysis?.root_cause || "",
+          confidenceRaw: newInvestigation.root_cause_analysis?.confidence || "medium",
+          confidence: newInvestigation.root_cause_analysis?.confidence
+            ? `${newInvestigation.root_cause_analysis.confidence.toUpperCase()} Confidence`
+            : "Medium Confidence",
+          evidence: newInvestigation.root_cause_analysis?.evidence || [],
+          observedFacts: (newInvestigation.root_cause_analysis?.evidence || []).slice(0, 2),
+          likelyCauses: newInvestigation.root_cause_analysis?.root_cause
+            ? [newInvestigation.root_cause_analysis.root_cause]
+            : [],
+          unverifiedHypotheses: [],
+          evidenceLimitations: [],
+          recommendedFix: newInvestigation.root_cause_analysis?.recommended_fix || "",
+          verificationSteps: newInvestigation.root_cause_analysis?.verification_steps || [],
+          humanApprovalRequired: newInvestigation.root_cause_analysis?.human_approval_required ?? true,
+        },
+      }));
+
+      const result = await verificationApi.verifySimulation(simulationId);
+      setVerification(result);
+    } catch (err) {
+      console.error("Reinvestigation failed:", err);
+      setVerificationError(
+        err?.message || "Reinvestigation could not be completed."
       );
     } finally {
       setIsVerifying(false);
@@ -700,15 +745,25 @@ export function IncidentDetailPage() {
                 : "Not yet verified"}
             </span>
 
-            <Button
+                        <Button
               variant="outline"
               size="sm"
               icon={CheckCircle2}
               isLoading={isVerifying}
               disabled={verification?.match === "correct" || verification?.attempts_remaining === 0}
-              onClick={handleVerifyDiagnosis}
+              onClick={
+                verification && verification.match !== "correct"
+                  ? handleReinvestigateAndVerify
+                  : handleVerifyDiagnosis
+              }
             >
-              {verification ? "Verify Again" : "Verify Diagnosis"}
+              {!verification
+                ? "Verify Diagnosis"
+                : verification.match === "correct"
+                ? "Verified Correct"
+                : verification.attempts_remaining === 0
+                ? "Attempts Exhausted"
+                : "Re-investigate & Verify"}
             </Button>
           </div>
         </div>

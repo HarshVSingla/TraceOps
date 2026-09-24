@@ -26,5 +26,31 @@ export const verificationApi = {
       const errJson = await response.json().catch(() => ({}));
       throw new Error(errJson.detail || `Verification failed with status ${response.status}`);
     }
+
+    
   },
+
+    async reinvestigateSimulation(simulationId) {
+    if (!simulationId) {
+      throw new Error("Simulation ID is required for reinvestigation.");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/simulation/reinvestigate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        simulation_id: simulationId,
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.investigation;
+    } else {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.detail || `Reinvestigation failed with status ${response.status}`);
+    }
+  },  
 };

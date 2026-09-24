@@ -552,3 +552,86 @@ def verify_simulation(
         "match": verdict.get("match"),
         "reasoning": verdict.get("reasoning")
     }
+
+# ---------------------------------------------------------
+# RE-INVESTIGATE WITH PRIOR FEEDBACK
+# ---------------------------------------------------------
+
+@router.post("/reinvestigate")
+def reinvestigate_simulation(
+    request: InvestigationRequest
+):
+
+    simulation = simulation_store.get(
+        request.simulation_id
+    )
+
+    if not simulation:
+        raise HTTPException(
+            status_code=404,
+            detail="Simulation not found."
+        )
+
+    if simulation["status"] != "active":
+        raise HTTPException(
+            status_code=400,
+            detail="Simulation is not active (already resolved or failed)."
+        )
+
+    attempts = simulation["attempts"]
+
+    if len(attempts) >= 3:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum of 3 attempts already used."
+        )
+
+    if not attempts:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "No prior verification attempt found. "
+                "Run /simulation/verify at least once before retrying."
+            )
+        )
+
+    last_attempt = attempts[-1]
+
+    prior_feedback = {
+        "previous_root_cause": last_attempt.get("diagnosed_root_cause", ""),
+        "reasoning": last_attempt.get("reasoning", "")
+    }
+
+    investigation_evidence = simulation["investigation_evidence"]
+
+    try:
+
+        orchestrator = TraceOpsOrchestrator()
+
+        investigation_result = orchestrator.investigate(
+            investigation_evidence,
+            prior_feedback=prior_feedback
+        )
+
+        simulation["last_investigation"] = investigation_result
+
+        return {
+            "status": "completed",
+            "simulation_id": request.simulation_id,
+            "investigation": investigation_result
+        }
+
+    except Exception as error:
+
+        print(
+            "Reinvestigation Error:",
+            str(error)
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Reinvestigation execution failed. "
+                "Check the backend terminal for details."
+            )
+        )
